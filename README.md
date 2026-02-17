@@ -80,8 +80,7 @@ None.
 ## Ludus setup
 
 ```bash
-ludus ansible role add -d ./ludus_windows_smb_share
-# ludus ansible roles add e1a.ludus_windows_smb_share
+ludus ansible roles add e1a.ludus_windows_smb_share
 ludus range deploy -t user-defined-roles --only-roles ludus_windows_smb_share --limit <vm_name>
 ```
 
