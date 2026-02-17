@@ -1,0 +1,115 @@
+---
+- name: Check required vars are set
+  ansible.builtin.assert:
+    that:
+      - ludus_windows_smb_share_name | length > 0
+      - ludus_windows_smb_share_path | length > 0
+      - ludus_windows_smb_share_read_group | length > 0
+      - ludus_windows_smb_share_write_group | length > 0
+    fail_msg: >
+      Missing required vars
+
+- name: Resolve principals to SIDs
+  ansible.windows.win_powershell:
+    script: |
+      $ErrorActionPreference = 'Stop'
+
+      $names = @(
+        "{{ ludus_windows_smb_share_full_users | trim }}",
+        "{{ ludus_windows_smb_share_read_group | trim }}",
+        "{{ ludus_windows_smb_share_write_group | trim }}"
+      ) | Where-Object { $_ -and $_.Length -gt 0 } | Select-Object -Unique
+
+      $out = @()
+
+      foreach ($n in $names) {
+        $fix = ""
+        try {
+          $sid = (New-Object System.Security.Principal.NTAccount($n)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+          $out += [pscustomobject]@{ name = $n; sid = $sid; ok = $true; suggestion = $fix }
+        } catch {
+          if ($n -match '^[^\\]+\\Authenticated Users$') { $fix = 'NT AUTHORITY\Authenticated Users' }
+          elseif ($n -match '^[^\\]+\\Everyone$') { $fix = 'Everyone' }
+          elseif ($n -match '^(?:[^\\]+\\|NT AUTHORITY\\)Backup Operators$') { $fix = 'BUILTIN\Backup Operators' }
+          elseif ($n -match '^[^\\]+\\Remote Desktop Users$') { $fix = 'BUILTIN\Remote Desktop Users' }
+          elseif ($n -match '^[^\\]+\\Administrators$') { $fix = 'BUILTIN\Administrators' }
+
+          $out += [pscustomobject]@{ name = $n; sid = ""; ok = $false; suggestion = $fix }
+        }
+      }
+
+      Write-Output ($out | ConvertTo-Json -Compress)
+  register: ludus_windows_smb_share_sid_check
+  changed_when: false
+
+- name: Collect invalid principals
+  ansible.builtin.set_fact:
+    ludus_windows_smb_share_sid_invalid: >-
+      {{
+        (ludus_windows_smb_share_sid_check.output[0] | from_json)
+        | selectattr('ok', 'equalto', false)
+        | list
+      }}
+
+- name: Stop if any principals do not resolve
+  ansible.builtin.fail:
+    msg: >-
+      SMB principal(s) did not resolve to a SID:
+      {%- for r in ludus_windows_smb_share_sid_invalid -%}
+      {{ r.name }}{% if r.suggestion %} (try: {{ r.suggestion }}){% endif %}{% if not loop.last %}; {% endif %}
+      {%- endfor -%}.
+      Use DOMAIN\Group, BUILTIN\Group, or NT AUTHORITY\Authenticated Users.
+  when: ludus_windows_smb_share_sid_invalid | length > 0
+
+- name: Build share permission lists
+  ansible.builtin.set_fact:
+    ludus_windows_smb_share_read_principals: >-
+      {{
+        [
+          ludus_windows_smb_share_read_group,
+          ludus_windows_smb_share_write_group
+        ] | map('trim') | reject('equalto', '') | unique | join(',')
+      }}
+    ludus_windows_smb_share_change_principals: "{{ ludus_windows_smb_share_write_group | trim }}"
+
+- name: Create share path
+  ansible.windows.win_file:
+    path: "{{ ludus_windows_smb_share_path }}"
+    state: directory
+  when: ludus_windows_smb_share_create_path
+
+- name: Create or update SMB share
+  ansible.windows.win_share:
+    name: "{{ ludus_windows_smb_share_name }}"
+    path: "{{ ludus_windows_smb_share_path }}"
+    description: "{{ ludus_windows_smb_share_description if ludus_windows_smb_share_description | length > 0 else omit }}"
+    list: "{{ ludus_windows_smb_share_list }}"
+    full: "{{ ludus_windows_smb_share_full_users if ludus_windows_smb_share_full_users | length > 0 else omit }}"
+    read: "{{ ludus_windows_smb_share_read_principals }}"
+    change: "{{ ludus_windows_smb_share_change_principals }}"
+    rule_action: set
+    state: present
+
+- name: Set NTFS ACL for read group
+  ansible.windows.win_acl:
+    path: "{{ ludus_windows_smb_share_path }}"
+    user: "{{ ludus_windows_smb_share_read_group }}"
+    rights: "{{ ludus_windows_smb_share_read_acl_rights }}"
+    type: allow
+    state: present
+    inherit: ContainerInherit, ObjectInherit
+    propagation: None
+  when:
+    - ludus_windows_smb_share_set_ntfs_acl
+    - ludus_windows_smb_share_read_group | trim != ludus_windows_smb_share_write_group | trim
+
+- name: Set NTFS ACL for write group
+  ansible.windows.win_acl:
+    path: "{{ ludus_windows_smb_share_path }}"
+    user: "{{ ludus_windows_smb_share_write_group }}"
+    rights: "{{ ludus_windows_smb_share_write_acl_rights }}"
+    type: allow
+    state: present
+    inherit: ContainerInherit, ObjectInherit
+    propagation: None
+  when: ludus_windows_smb_share_set_ntfs_acl

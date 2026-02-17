@@ -1,0 +1,20 @@
+---
+# Share configuration
+ludus_windows_smb_share_name: ""
+ludus_windows_smb_share_path: ""
+ludus_windows_smb_share_description: ""
+
+# Controls Access Based Enumeration (FolderEnumerationMode), not hidden shares
+ludus_windows_smb_share_list: true
+
+# Principals can be local groups (BUILTIN\Users) or domain groups (E1A\Domain Users)
+# Well-known principals should use their correct authority (NT AUTHORITY\Authenticated Users)
+ludus_windows_smb_share_read_group: ""
+ludus_windows_smb_share_write_group: ""
+ludus_windows_smb_share_full_users: "BUILTIN\Administrators"
+
+# File system ACL controls
+ludus_windows_smb_share_create_path: true
+ludus_windows_smb_share_set_ntfs_acl: true
+ludus_windows_smb_share_read_acl_rights: "ReadAndExecute,Synchronize"
+ludus_windows_smb_share_write_acl_rights: "Modify,Synchronize"
