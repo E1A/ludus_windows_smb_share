@@ -11,7 +11,7 @@ ludus_windows_smb_share_list: true
 # Well-known principals should use their correct authority (NT AUTHORITY\Authenticated Users)
 ludus_windows_smb_share_read_group: ""
 ludus_windows_smb_share_write_group: ""
-ludus_windows_smb_share_full_users: "BUILTIN\Administrators"
+ludus_windows_smb_share_full_users: 'BUILTIN\Administrators'
 
 # File system ACL controls
 ludus_windows_smb_share_create_path: true

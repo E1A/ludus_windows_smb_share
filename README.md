@@ -21,7 +21,7 @@ Optional:
 
     ludus_windows_smb_share_description: ""
     ludus_windows_smb_share_list: true
-    ludus_windows_smb_share_full_users: "BUILTIN\Administrators"
+    ludus_windows_smb_share_full_users: 'BUILTIN\Administrators'
     ludus_windows_smb_share_create_path: true
     ludus_windows_smb_share_set_ntfs_acl: true
     ludus_windows_smb_share_read_acl_rights: "ReadAndExecute,Synchronize"
@@ -36,7 +36,7 @@ None.
 ```yaml
 - hosts: smb_hosts
   roles:
-    - ludus_windows_smb_share
+    - e1a.ludus_windows_smb_share
   vars:
     ludus_windows_smb_share_name: corpfiles
     ludus_windows_smb_share_path: 'C:\Shares\corpfiles'
@@ -60,7 +60,7 @@ None.
       fqdn: e1a.local
       role: member
     roles:
-      - ludus_windows_smb_share
+      - e1a.ludus_windows_smb_share
     role_vars:
       ludus_windows_smb_share_name: Gabber
       ludus_windows_smb_share_path: 'C:\Shares\gabber'
@@ -81,7 +81,7 @@ None.
 
 ```bash
 ludus ansible roles add e1a.ludus_windows_smb_share
-ludus range deploy -t user-defined-roles --only-roles ludus_windows_smb_share --limit <vm_name>
+ludus range deploy -t user-defined-roles --only-roles e1a.ludus_windows_smb_share --limit <vm_name>
 ```
 
 ## License

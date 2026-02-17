@@ -13,7 +13,7 @@ ludus:
       fqdn: e1a.local
       role: primary-dc
     roles:
-      - ludus_windows_smb_share
+      - e1a.ludus_windows_smb_share
     role_vars:
       ludus_windows_smb_share_name: 'Corporate Files'
       ludus_windows_smb_share_path: 'C:\Shares\corpfiles'
@@ -40,7 +40,7 @@ ludus:
       fqdn: e1a.local
       role: member
     roles:
-      - ludus_windows_smb_share
+      - e1a.ludus_windows_smb_share
     role_vars:
       ludus_windows_smb_share_name: Gabber
       ludus_windows_smb_share_path: 'C:\Shares\gabber'
@@ -67,7 +67,7 @@ ludus:
       fqdn: e1a.local
       role: member
     roles:
-      - ludus_windows_smb_share
+      - e1a.ludus_windows_smb_share
     role_vars:
       ludus_windows_smb_share_name: rahhhh$
       ludus_windows_smb_share_path: 'C:\Shares\idk'
