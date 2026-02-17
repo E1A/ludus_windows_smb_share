@@ -23,18 +23,11 @@
       $out = @()
 
       foreach ($n in $names) {
-        $fix = ""
         try {
           $sid = (New-Object System.Security.Principal.NTAccount($n)).Translate([System.Security.Principal.SecurityIdentifier]).Value
-          $out += [pscustomobject]@{ name = $n; sid = $sid; ok = $true; suggestion = $fix }
+          $out += [pscustomobject]@{ name = $n; sid = $sid; ok = $true; suggestion = "" }
         } catch {
-          if ($n -match '^[^\\]+\\Authenticated Users$') { $fix = 'NT AUTHORITY\Authenticated Users' }
-          elseif ($n -match '^[^\\]+\\Everyone$') { $fix = 'Everyone' }
-          elseif ($n -match '^(?:[^\\]+\\|NT AUTHORITY\\)Backup Operators$') { $fix = 'BUILTIN\Backup Operators' }
-          elseif ($n -match '^[^\\]+\\Remote Desktop Users$') { $fix = 'BUILTIN\Remote Desktop Users' }
-          elseif ($n -match '^[^\\]+\\Administrators$') { $fix = 'BUILTIN\Administrators' }
-
-          $out += [pscustomobject]@{ name = $n; sid = ""; ok = $false; suggestion = $fix }
+          $out += [pscustomobject]@{ name = $n; sid = ""; ok = $false; suggestion = "" }
         }
       }
 
@@ -58,7 +51,7 @@
       {%- for r in ludus_windows_smb_share_sid_invalid -%}
       {{ r.name }}{% if r.suggestion %} (try: {{ r.suggestion }}){% endif %}{% if not loop.last %}; {% endif %}
       {%- endfor -%}.
-      Use DOMAIN\Group, BUILTIN\Group, or NT AUTHORITY\Authenticated Users.
+      Use a resolvable principal name such as DOMAIN\Group or BUILTIN\Group.
   when: ludus_windows_smb_share_sid_invalid | length > 0
 
 - name: Build share permission lists
